@@ -14,7 +14,6 @@ interface SettingsFormProps {
     name: string
     coaching_style: string
     custom_instructions: string
-    hasApiKey: boolean
   }
 }
 
@@ -66,35 +65,6 @@ export function SettingsForm({ workspace }: SettingsFormProps) {
               defaultValue={workspace.custom_instructions}
               placeholder="Add any custom coaching rules or instructions..."
               rows={4}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>API Key</CardTitle>
-          <CardDescription>
-            Your Anthropic API key is stored encrypted and used to power AI coaching.
-            {workspace.hasApiKey && (
-              <span className="ml-1 text-green-600 dark:text-green-400">
-                Key configured.
-              </span>
-            )}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="api_key">Anthropic API Key</Label>
-            <Input
-              id="api_key"
-              name="api_key"
-              type="password"
-              placeholder={
-                workspace.hasApiKey
-                  ? "Leave blank to keep current key"
-                  : "sk-ant-..."
-              }
             />
           </div>
         </CardContent>

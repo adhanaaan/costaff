@@ -25,7 +25,6 @@ export default async function SettingsPage() {
           name: workspace.name,
           coaching_style: workspace.coaching_style || "socratic",
           custom_instructions: workspace.custom_instructions || "",
-          hasApiKey: !!workspace.anthropic_api_key_encrypted,
         }}
       />
     </div>

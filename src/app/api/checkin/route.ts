@@ -1,6 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { createClient } from "@/lib/supabase/server"
-import { decrypt } from "@/lib/encryption"
 import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
@@ -34,17 +33,17 @@ export async function POST(req: Request) {
     .eq("id", member.workspace_id)
     .single()
 
-  if (!workspace?.anthropic_api_key_encrypted) {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
     return NextResponse.json(
-      { error: "API key not configured" },
-      { status: 400 }
+      { error: "API key not configured on server" },
+      { status: 500 }
     )
   }
 
   // Generate AI guidance
   let aiGuidance = ""
   try {
-    const apiKey = decrypt(workspace.anthropic_api_key_encrypted)
     const anthropic = new Anthropic({ apiKey })
 
     const response = await anthropic.messages.create({

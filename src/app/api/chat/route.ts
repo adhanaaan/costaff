@@ -1,6 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { createClient } from "@/lib/supabase/server"
-import { decrypt } from "@/lib/encryption"
 import { buildSystemPrompt } from "@/lib/ai/system-prompt"
 import { getRelevantDocumentContext } from "@/lib/ai/context"
 import { NextResponse } from "next/server"
@@ -31,27 +30,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not a team member" }, { status: 403 })
   }
 
-  // Get workspace with encrypted API key
+  // Get workspace
   const { data: workspace } = await supabase
     .from("workspaces")
     .select("*")
     .eq("id", member.workspace_id)
     .single()
 
-  if (!workspace?.anthropic_api_key_encrypted) {
-    return NextResponse.json(
-      { error: "API key not configured. Ask your founder to set it up." },
-      { status: 400 }
-    )
+  if (!workspace) {
+    return NextResponse.json({ error: "Workspace not found" }, { status: 404 })
   }
 
-  // Decrypt API key
-  let apiKey: string
-  try {
-    apiKey = decrypt(workspace.anthropic_api_key_encrypted)
-  } catch {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
     return NextResponse.json(
-      { error: "Failed to decrypt API key" },
+      { error: "API key not configured on server" },
       { status: 500 }
     )
   }

@@ -1,7 +1,6 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { encrypt } from "@/lib/encryption"
 import { revalidatePath } from "next/cache"
 
 export async function updateSettings(formData: FormData) {
@@ -15,11 +14,6 @@ export async function updateSettings(formData: FormData) {
     name: formData.get("name"),
     coaching_style: formData.get("coaching_style"),
     custom_instructions: formData.get("custom_instructions") || null,
-  }
-
-  const apiKey = formData.get("api_key") as string
-  if (apiKey && apiKey.trim()) {
-    updates.anthropic_api_key_encrypted = encrypt(apiKey.trim())
   }
 
   const { error } = await supabase

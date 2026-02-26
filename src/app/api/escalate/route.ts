@@ -1,6 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { createClient } from "@/lib/supabase/server"
-import { decrypt } from "@/lib/encryption"
 import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
@@ -52,9 +51,9 @@ export async function POST(req: Request) {
       .map((m) => `${m.role}: ${m.content}`)
       .join("\n\n")
 
-    if (workspace?.anthropic_api_key_encrypted) {
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (apiKey) {
       try {
-        const apiKey = decrypt(workspace.anthropic_api_key_encrypted)
         const anthropic = new Anthropic({ apiKey })
 
         const response = await anthropic.messages.create({

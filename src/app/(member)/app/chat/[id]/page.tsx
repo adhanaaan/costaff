@@ -27,6 +27,7 @@ export default async function ChatPage({
       conversationId={id}
       initialMessages={
         messages?.map((m) => ({
+          id: m.id,
           role: m.role as "user" | "assistant" | "system",
           content: m.content,
         })) || []

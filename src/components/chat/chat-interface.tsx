@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback, memo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -8,6 +8,7 @@ import { Send, AlertTriangle, Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 
 interface Message {
+  id: string
   role: "user" | "assistant" | "system"
   content: string
 }
@@ -17,10 +18,46 @@ interface ChatInterfaceProps {
   initialMessages: Message[]
 }
 
+let msgIdCounter = 0
+function nextMsgId() {
+  return `msg-${Date.now()}-${++msgIdCounter}`
+}
+
+const ChatBubble = memo(function ChatBubble({
+  msg,
+  isLastAssistant,
+  isStreaming,
+}: {
+  msg: Message
+  isLastAssistant: boolean
+  isStreaming: boolean
+}) {
+  return (
+    <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+      <div
+        className={`max-w-[80%] rounded-lg px-4 py-2 text-sm ${
+          msg.role === "user"
+            ? "bg-primary text-primary-foreground"
+            : msg.role === "system"
+              ? "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400 text-center italic"
+              : "bg-muted"
+        }`}
+      >
+        <div className="whitespace-pre-wrap">{msg.content}</div>
+        {isStreaming && isLastAssistant && (
+          <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
+        )}
+      </div>
+    </div>
+  )
+})
+
 export function ChatInterface({ conversationId: initialConvId, initialMessages }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState("")
   const [isStreaming, setIsStreaming] = useState(false)
+  const [streamingContent, setStreamingContent] = useState("")
+  const streamingIdRef = useRef<string | null>(null)
   const [convId, setConvId] = useState<string | null>(initialConvId)
   const [error, setError] = useState<string | null>(null)
   const [escalateOpen, setEscalateOpen] = useState(false)
@@ -29,11 +66,15 @@ export function ChatInterface({ conversationId: initialConvId, initialMessages }
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const router = useRouter()
 
-  useEffect(() => {
+  const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [messages])
+  }, [])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages, streamingContent, scrollToBottom])
 
   async function handleSend() {
     if (!input.trim() || isStreaming) return
@@ -41,11 +82,12 @@ export function ChatInterface({ conversationId: initialConvId, initialMessages }
     const userMessage = input.trim()
     setInput("")
     setError(null)
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }])
-    setIsStreaming(true)
 
-    // Add empty assistant message for streaming
-    setMessages((prev) => [...prev, { role: "assistant", content: "" }])
+    const userMsgId = nextMsgId()
+    setMessages((prev) => [...prev, { id: userMsgId, role: "user", content: userMessage }])
+    setIsStreaming(true)
+    setStreamingContent("")
+    streamingIdRef.current = nextMsgId()
 
     try {
       const res = await fetch("/api/chat", {
@@ -86,19 +128,19 @@ export function ChatInterface({ conversationId: initialConvId, initialMessages }
           assistantMessage += chunk
         }
 
-        setMessages((prev) => {
-          const updated = [...prev]
-          updated[updated.length - 1] = {
-            role: "assistant",
-            content: assistantMessage,
-          }
-          return updated
-        })
+        // Only update streaming content state (not the messages array)
+        setStreamingContent(assistantMessage)
       }
+
+      // Streaming done — commit final message to the messages array
+      const finalId = streamingIdRef.current!
+      setMessages((prev) => [...prev, { id: finalId, role: "assistant", content: assistantMessage }])
+      setStreamingContent("")
+      streamingIdRef.current = null
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send message")
-      // Remove the empty assistant message on error
-      setMessages((prev) => prev.slice(0, -1))
+      setStreamingContent("")
+      streamingIdRef.current = null
     }
 
     setIsStreaming(false)
@@ -126,6 +168,7 @@ export function ChatInterface({ conversationId: initialConvId, initialMessages }
       setMessages((prev) => [
         ...prev,
         {
+          id: nextMsgId(),
           role: "system",
           content: "This conversation has been escalated to the founder for review.",
         },
@@ -166,7 +209,7 @@ export function ChatInterface({ conversationId: initialConvId, initialMessages }
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-auto p-4 space-y-4">
-        {messages.length === 0 && (
+        {messages.length === 0 && !isStreaming && (
           <div className="flex items-center justify-center h-full text-center text-muted-foreground">
             <div>
               <p className="text-lg font-medium mb-2">Welcome to CoStaff</p>
@@ -174,27 +217,23 @@ export function ChatInterface({ conversationId: initialConvId, initialMessages }
             </div>
           </div>
         )}
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-[80%] rounded-lg px-4 py-2 text-sm ${
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : msg.role === "system"
-                    ? "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400 text-center italic"
-                    : "bg-muted"
-              }`}
-            >
-              <div className="whitespace-pre-wrap">{msg.content}</div>
-              {isStreaming && i === messages.length - 1 && msg.role === "assistant" && (
-                <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
-              )}
+        {messages.map((msg) => (
+          <ChatBubble
+            key={msg.id}
+            msg={msg}
+            isLastAssistant={false}
+            isStreaming={false}
+          />
+        ))}
+        {/* Streaming message rendered separately — only this div re-renders on each chunk */}
+        {isStreaming && streamingContent && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] rounded-lg px-4 py-2 text-sm bg-muted">
+              <div className="whitespace-pre-wrap">{streamingContent}</div>
+              <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
             </div>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Error */}

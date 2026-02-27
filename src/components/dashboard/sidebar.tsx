@@ -50,20 +50,18 @@ export function DashboardSidebar({ workspace, userEmail }: DashboardSidebarProps
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r bg-card transition-transform md:static md:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-60 flex-col bg-sidebar text-sidebar-foreground transition-transform md:static md:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Logo / workspace name */}
-        <div className="flex h-14 items-center border-b px-4">
-          <h1 className="text-lg font-bold">CoStaff</h1>
-          <span className="ml-2 text-sm text-muted-foreground truncate">
-            {workspace.name}
-          </span>
+        <div className="flex h-14 items-center gap-2 px-5">
+          <span className="text-base font-semibold tracking-tight text-white">CoStaff</span>
+          <span className="text-xs text-slate-400 truncate">{workspace.name}</span>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 p-3">
+        <nav className="flex-1 space-y-0.5 px-3 pt-2">
           {navItems.map((item) => {
             const isActive =
               item.href === "/dashboard"
@@ -77,8 +75,8 @@ export function DashboardSidebar({ workspace, userEmail }: DashboardSidebarProps
                 className={cn(
                   "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    ? "bg-sidebar-muted text-white"
+                    : "text-slate-400 hover:bg-sidebar-muted/50 hover:text-white"
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -89,10 +87,14 @@ export function DashboardSidebar({ workspace, userEmail }: DashboardSidebarProps
         </nav>
 
         {/* User info + logout */}
-        <div className="border-t p-3">
-          <p className="mb-2 truncate text-xs text-muted-foreground">{userEmail}</p>
+        <div className="border-t border-slate-700/50 p-4">
+          <p className="mb-2 truncate text-xs text-slate-500">{userEmail}</p>
           <form action={logout}>
-            <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-2 text-slate-400 hover:text-white hover:bg-sidebar-muted/50"
+            >
               <LogOut className="h-4 w-4" />
               Sign Out
             </Button>

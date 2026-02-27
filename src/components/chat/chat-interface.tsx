@@ -39,7 +39,7 @@ const ChatBubble = memo(function ChatBubble({
           msg.role === "user"
             ? "bg-primary text-primary-foreground"
             : msg.role === "system"
-              ? "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400 text-center italic"
+              ? "bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400 text-center italic"
               : "bg-muted"
         }`}
       >

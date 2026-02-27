@@ -69,26 +69,25 @@ export async function POST(req: Request) {
     convId = conv.id
   }
 
-  // Save user message
+  // Save user message, fetch history, and get documents in parallel
   await supabase.from("messages").insert({
     conversation_id: convId,
     role: "user",
     content: message,
   })
 
-  // Fetch last 20 messages for history
-  const { data: history } = await supabase
-    .from("messages")
-    .select("role, content")
-    .eq("conversation_id", convId)
-    .order("created_at", { ascending: true })
-    .limit(20)
-
-  // Get documents for context
-  const { data: documents } = await supabase
-    .from("documents")
-    .select("*")
-    .eq("workspace_id", workspace.id)
+  const [{ data: history }, { data: documents }] = await Promise.all([
+    supabase
+      .from("messages")
+      .select("role, content")
+      .eq("conversation_id", convId)
+      .order("created_at", { ascending: true })
+      .limit(20),
+    supabase
+      .from("documents")
+      .select("*")
+      .eq("workspace_id", workspace.id),
+  ])
 
   const documentContext = getRelevantDocumentContext(documents || [], message)
 

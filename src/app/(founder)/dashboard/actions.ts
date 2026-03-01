@@ -61,3 +61,22 @@ export async function addFounderNote(checkinId: string, note: string) {
   revalidatePath("/dashboard")
   return { success: true }
 }
+
+export async function addConversationNote(conversationId: string, note: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Unauthorized" }
+
+  const { error } = await supabase.from("messages").insert({
+    conversation_id: conversationId,
+    role: "system",
+    content: `[Founder Note]: ${note}`,
+  })
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/dashboard/conversations/${conversationId}`)
+  return { success: true }
+}
